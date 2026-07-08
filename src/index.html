@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="img/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MD Notes</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div class="app-container">
+      <!-- Кастомный заголовок окна (Titlebar) -->
+      <div id="titlebar" data-tauri-drag-region>
+        <div class="titlebar-left" data-tauri-drag-region>
+          <span class="titlebar-title" data-tauri-drag-region>MD Notes</span>
+          <button id="new-note-btn" data-tauri-no-drag>New Note</button>
+          <button id="save-btn" data-tauri-no-drag>Save</button>
+          <button id="settings-btn" data-tauri-no-drag>Settings</button>
+        </div>
+        <span id="win-title" class="tb-file" data-tauri-drag-region></span>
+        <div class="titlebar-right" data-tauri-no-drag>
+          <button class="titlebar-win-btn" id="titlebar-minimize" data-tauri-no-drag>
+            <svg width="10" height="1"><rect width="10" height="1" fill="currentColor"/></svg>
+          </button>
+          <button class="titlebar-win-btn" id="titlebar-maximize" data-tauri-no-drag>
+            <svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg>
+          </button>
+          <button class="titlebar-win-btn" id="titlebar-close" data-tauri-no-drag>
+            <svg width="10" height="10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <header class="app-toolbar">
+        <div class="toolbar-left">
+          <div class="search-container">
+            <input type="text" id="search-input" placeholder="Поиск заметок..." autocomplete="off" />
+            <button id="search-clear-btn" class="search-clear-btn hidden">&#10005;</button>
+          </div>
+        </div>
+        
+        <div class="toolbar-middle">
+          <div class="format-buttons">
+            <button class="toolbar-btn" id="btn-add-text">
+              <span class="material-symbols-outlined">notes</span>
+            </button>
+            <button class="toolbar-btn" id="btn-add-checklist">
+              <span class="material-symbols-outlined">checklist</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button class="toolbar-btn" id="btn-bold"><span class="material-symbols-outlined">format_bold</span></button>
+          <button class="toolbar-btn" id="btn-italic"><span class="material-symbols-outlined">format_italic</span></button>
+          <button class="toolbar-btn" id="btn-underline"><span class="material-symbols-outlined">format_underlined</span></button>
+          <button class="toolbar-btn" id="btn-strike"><span class="material-symbols-outlined">format_strikethrough</span></button>
+        </div>
+      </header>
+
+      <!-- Область ниже верхней панели -->
+      <div class="app-content">
+        <!-- Сайдбар (боковая панель) -->
+        <aside class="sidebar">
+          <div class="notes-list" id="notes-list">
+            <!-- Список заметок будет генерироваться JS динамически -->
+          </div>
+        </aside>
+
+        <!-- Основная область редактора -->
+        <main class="editor-area">
+          <div class="editor-container">
+            <input type="text" id="note-title" placeholder="Без названия" autocomplete="off" />
+            <div id="note-desc" contenteditable="true" placeholder="Описание заметки..."></div>
+            <div id="note-content" contenteditable="true" placeholder="Начните писать здесь..."></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div id="settings-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 id="settings-modal-title">Settings</h2>
+          <button id="settings-close-icon" class="modal-close-icon">&#10005;</button>
+        </header>
+        <div class="modal-body">
+          <div class="setting-item">
+            <label for="setting-theme" id="label-setting-theme">Theme</label>
+            <select id="setting-theme">
+              <option value="system" id="opt-theme-system">System</option>
+              <option value="light" id="opt-theme-light">Light</option>
+              <option value="dark" id="opt-theme-dark">Dark</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label for="setting-lang" id="label-setting-lang">Language</label>
+            <select id="setting-lang">
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления заметки -->
+    <div id="confirm-delete-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 id="confirm-delete-title">Delete Note</h2>
+          <button id="confirm-delete-close" class="modal-close-icon">&#10005;</button>
+        </header>
+        <div class="modal-body">
+          <p id="confirm-delete-message">Вы действительно хотите удалить эту заметку?</p>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-confirm-delete-cancel" class="modal-btn-cancel">Cancel</button>
+          <button id="btn-confirm-delete-ok" class="modal-btn-ok">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно несохраненных изменений -->
+    <div id="unsaved-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2 id="unsaved-title">Save Changes?</h2>
+          <button id="unsaved-close" class="modal-close-icon">&#10005;</button>
+        </header>
+        <div class="modal-body">
+          <p id="unsaved-message">У вас есть несохраненные изменения. Сохранить текущую заметку?</p>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-unsaved-no" class="modal-btn-cancel">Don't Save</button>
+          <button id="btn-unsaved-yes" class="modal-btn-ok">Save</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

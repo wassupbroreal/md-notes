@@ -1,0 +1,1155 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Токены дизайна в стиле MD Viewer */
+:root {
+  color-scheme: light;
+  --bg:           #f3f3f3; /* Фоновый цвет MD Viewer */
+  --bg-sidebar:   #f9f9f9;
+  --bg-editor:    #ffffff;
+  --bg-hover:     #f3f3f3;
+  --bg-active:    #eaeaea;
+  --bg-titlebar:  #f7f7f7;
+  --bg-input:     #eeeeee;
+  --bg-input-focus: #e5e5e5;
+  --border-color: #e0e0e0;
+  --text-color:   #202020;
+  --text-secondary: #5d5d5d;
+  --text-third:    #a0a0a0;
+  --accent-color: #0062e6; /* Вибрантный синий */
+  --accent-text:  #ffffff;
+  --font-stack:   'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235d5d5d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  --t:            0.15s;
+}
+
+/* Принудительная темная тема (соответствие токенам MD Viewer) */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:           #1b1b1b;
+  --bg-sidebar:   #202020;
+  --bg-editor:    #2d2d2d;
+  --bg-hover:     #3a3a3a;
+  --bg-active:    #444444;
+  --bg-titlebar:  #262626;
+  --bg-input:     #121212;
+  --bg-input-focus: #181818;
+  --border-color: #383838;
+  --text-color:   #f3f3f3;
+  --text-secondary: #cccccc;
+  --text-third:    #808080;
+  --accent-color: #60a5fa;
+  --accent-text:  #000000;
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Системная темная тема */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:           #1b1b1b;
+    --bg-sidebar:   #202020;
+    --bg-editor:    #2d2d2d;
+    --bg-hover:     #3a3a3a;
+    --bg-active:    #444444;
+    --bg-titlebar:  #262626;
+    --bg-input:     #121212;
+    --bg-input-focus: #181818;
+    --border-color: #383838;
+    --text-color:   #f3f3f3;
+    --text-secondary: #cccccc;
+    --text-third:    #808080;
+    --accent-color: #60a5fa;
+    --accent-text:  #000000;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+}
+
+/* Глобальные стили */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Скрытие скроллбаров в Firefox */
+  scrollbar-width: none;
+}
+
+/* Отключение переходов при смене темы */
+.no-transitions,
+.no-transitions * {
+  transition: none !important;
+}
+
+/* Полный сброс рамок фокуса во всем приложении */
+*, *:focus, *:focus-visible {
+  outline: none !important;
+}
+
+/* Запрет выделения по умолчанию (как в MD Viewer) */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Разрешить выделение в инпутах и в поле ввода контента */
+input, #note-content, #note-content * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Скрытие скроллбаров в Chrome/Safari/Opera/Edge */
+::-webkit-scrollbar {
+  display: none;
+}
+
+body, html {
+  height: 100%;
+  font-family: var(--font-stack);
+  font-size: 13px; /* В соответствии с MD Viewer */
+  color: var(--text-color);
+  background-color: var(--bg-editor);
+  overflow: hidden;
+  -ms-overflow-style: none; /* Скрытие скроллбаров в IE/Edge */
+  overscroll-behavior: none; /* Отключение оверпрокрутки */
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* Контейнер всего приложения */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Кастомный Titlebar (дизайн как у MD Viewer) */
+#titlebar {
+  height: 31px; /* var(--tbar-h) из MD Viewer */
+  background-color: var(--bg-titlebar);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 20;
+  -webkit-app-region: drag; /* Перетаскивание всего заголовка */
+  position: relative;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 500; /* MD Viewer использует 500 для tb-app */
+  color: var(--text-secondary);
+  margin-left: 12px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+#settings-btn, #new-note-btn, #save-btn {
+  font-family: var(--font-stack);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: none;
+  padding: 0 12px;
+  height: 100%;
+  margin-left: 4px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  border-radius: 0;
+  box-shadow: none;
+  transition: background-color var(--t), color var(--t);
+  -webkit-app-region: no-drag; /* Исключаем кнопки из dragging */
+}
+
+#settings-btn:hover, #new-note-btn:hover, #save-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+#settings-btn:active, #new-note-btn:active, #save-btn:active {
+  background-color: var(--bg-active);
+}
+
+/* File name — centered dynamically in the flex space */
+.tb-file {
+  flex-grow: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Центрирует название по центру свободного пространства */
+  font-size: 11px;
+  color: var(--text-third); /* Как в MD Viewer */
+  font-weight: 400; /* Как в MD Viewer */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 16px;
+  min-width: 0;
+  -webkit-app-region: drag;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: no-drag; /* Исключаем кнопки управления из dragging */
+}
+
+.titlebar-win-btn {
+  width: 46px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  outline: none;
+  border-radius: 0;
+  box-shadow: none;
+  transition: background-color var(--t), color var(--t);
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-win-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.titlebar-win-btn:active {
+  background-color: var(--bg-active);
+}
+
+#titlebar-close:hover {
+  background-color: #c42b1c !important; /* Соответствует wbtn-close:hover */
+  color: #ffffff !important;
+}
+
+/* Единая верхняя панель (под заголовком) */
+.app-toolbar {
+  height: 38px; /* var(--toolbar-h) из MD Viewer */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-editor); /* Белая панель */
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.toolbar-left {
+  width: 280px; /* Совпадает с шириной сайдбара */
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.toolbar-middle {
+  flex-grow: 1;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-right {
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.search-container {
+  position: relative;
+  flex-grow: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+#search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 32px 0 12px; /* Увеличим правый паддинг, чтобы текст не залезал под крестик */
+  border: none;
+  border-radius: 0;
+  background-color: var(--bg-editor); /* Белый */
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  box-shadow: none;
+  transition: background-color var(--t);
+}
+
+#search-input:focus {
+  background-color: var(--bg-editor);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-third);
+  font-size: 10px;
+  cursor: pointer;
+  outline: none;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--t), opacity var(--t);
+}
+
+.search-clear-btn:hover {
+  color: var(--text-color);
+  background: transparent !important;
+}
+
+.search-clear-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#new-note-btn {
+  margin-left: 16px; /* Увеличен отступ от названия приложения */
+}
+
+/* Область под панелью */
+.app-content {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Сайдбар */
+.sidebar {
+  width: 280px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.notes-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overscroll-behavior: none; /* Отключение оверпрокрутки списка */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.notes-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Tauri (Webkit) */
+}
+
+/* Элемент списка заметок */
+.note-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px; /* Высота совпадает с белой панелькой */
+  flex-shrink: 0; /* Предотвращает уменьшение высоты при заполнении списка */
+  padding: 0 16px;
+  border-radius: 0;
+  cursor: pointer;
+  position: relative;
+  border-left: none; /* Убран левый синий маркер/блок */
+  border-bottom: none; /* Убрано разделение между заметками */
+  transition: background-color var(--t);
+  box-sizing: border-box;
+}
+
+.note-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.note-item.active {
+  background-color: var(--bg-active);
+  border-left: none; /* Убран левый маркер в активном состоянии */
+}
+
+.note-item-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  flex-grow: 1;
+  padding-right: 34px; /* Отступ справа для предотвращения наложения текста на корзину */
+}
+
+.note-item-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--text-third); /* Серый по умолчанию */
+  transition: color var(--t);
+}
+
+.note-item-delete {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 38px; /* Ширина совпадает с кнопками тулбара */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-third);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--t), color var(--t), background-color var(--t);
+  outline: none;
+  box-shadow: none;
+  border-radius: 0; /* Убираем закругления */
+}
+
+.note-item-delete .material-symbols-outlined {
+  font-size: 18px !important;
+}
+
+.note-item:hover .note-item-delete {
+  opacity: 1;
+}
+
+.note-item-delete:hover {
+  background-color: #ff000018;
+  color: #ff4545;
+}
+
+/* Область редактора */
+.editor-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg); /* Идентично MD Viewer */
+  height: 100%;
+  overflow: hidden;
+}
+
+.format-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+}
+
+.toolbar-btn {
+  height: 100%;
+  width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  transition: background-color var(--t);
+}
+
+.toolbar-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.toolbar-btn:active, .toolbar-btn.active {
+  background-color: var(--bg-active);
+}
+
+.toolbar-btn .material-symbols-outlined {
+  font-size: 18px !important;
+}
+
+.toolbar-separator {
+  display: none;
+}
+
+
+
+/* Контейнер редактора */
+.editor-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  overflow-y: auto; /* Листаем весь контейнер с заголовком */
+  height: 100%;
+  scroll-behavior: smooth; /* Плавный скролл */
+}
+
+.editor-container.fade-active {
+  animation: fadeIn 0.2s ease-out;
+}
+
+#note-title {
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-color);
+  border: none;
+  background: transparent;
+  outline: none;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+#note-desc {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  outline: none;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  width: 100%;
+  flex-shrink: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 20px;
+}
+
+/* Плейсхолдер для описания заметки */
+#note-desc:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+#note-content {
+  flex-grow: 1;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
+  outline: none;
+  user-select: text;
+  word-break: break-word;
+}
+
+/* Плейсхолдер для contenteditable */
+#note-content:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+/* Стили форматирования внутри редактора */
+#note-content h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 12px 0 6px 0;
+}
+
+#note-content h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 10px 0 4px 0;
+}
+
+#note-content p {
+  margin-bottom: 6px;
+}
+
+/* Стили модального окна настроек (копия с MD Viewer) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.modal-content {
+  width: 320px;
+  background: var(--bg-editor);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); /* Соответствует MD Viewer */
+  transition: transform 0.2s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.2s ease;
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modal-overlay.hidden .modal-content {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.modal-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-sidebar); /* Соответствует MD Viewer */
+}
+
+.modal-header h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.modal-close-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-third);
+  font-size: 10px;
+  cursor: pointer;
+  outline: none;
+  padding: 6px;
+  border-radius: 4px;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--t), background-color var(--t);
+}
+
+.modal-close-icon:hover {
+  color: var(--text-color);
+  background-color: var(--bg-hover);
+}
+
+.modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.setting-item label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Стилизация select из MD Viewer */
+.setting-item select {
+  padding: 5px 28px 5px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-input);
+  background-image: var(--select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 11px 11px;
+  color: var(--text-color);
+  font-family: var(--font-stack);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  transition: border-color var(--t), background-color var(--t);
+  box-shadow: none;
+}
+
+.setting-item select:hover {
+  border-color: var(--text-third);
+}
+
+.setting-item select:focus {
+  border-color: var(--text-secondary);
+  background-color: var(--bg-input-focus);
+}
+
+.modal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--bg-editor);
+  gap: 8px;
+}
+
+.modal-footer button {
+  padding: 6px 14px;
+  font-family: var(--font-stack);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  transition: background-color var(--t), border-color var(--t), color var(--t);
+}
+
+.modal-btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.modal-btn-cancel:hover {
+  background-color: var(--bg-hover);
+}
+
+.modal-btn-ok {
+  background-color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  color: #ffffff;
+}
+
+.modal-btn-ok:hover {
+  background-color: var(--accent-color-hover, #0056b3);
+}
+
+#btn-confirm-delete-ok {
+  background-color: #ff4545;
+  border: 1px solid #ff4545;
+  color: #ffffff;
+}
+
+#btn-confirm-delete-ok:hover {
+  background-color: #d63030;
+  border-color: #d63030;
+}
+
+/* Анимации появления модального окна */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Стили всплывающего уведомления (Toast) */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--bg-sidebar);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-icon {
+  color: #107c41; /* Приятный зеленый цвет для галочки */
+  font-size: 16px !important;
+  display: flex;
+  align-items: center;
+}
+
+/* Стилизация чекбоксов внутри редактора заметок */
+.editor-checkbox {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px !important;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  margin-right: 6px;
+  color: var(--text-third);
+  transition: color var(--t);
+}
+
+.editor-checkbox::selection,
+.editor-checkbox *::selection {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.editor-checkbox::-moz-selection,
+.editor-checkbox *::-moz-selection {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.editor-checkbox.checked {
+  color: var(--accent-color);
+}
+
+/* Стилизация строк чек-листа */
+.checklist-row {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  padding: 6px 8px; /* 6px сверху/снизу и 8px слева/справа для идеальной симметрии чекбоксов */
+  background-color: var(--bg-editor); /* Белый фон строк в чек-листе */
+  border: 1px solid var(--border-color); /* Граница строки чек-листа */
+  border-radius: 4px;
+  gap: 8px;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  transition: background-color var(--t), border-color var(--t);
+  cursor: pointer; /* Указатель курсора в режиме чтения */
+}
+
+/* В режиме редактирования сбрасываем указатель на обычный выбор текста */
+.editor-block.is-editing .checklist-row {
+  cursor: default;
+}
+
+.editor-block.is-editing .checklist-row .checklist-text {
+  cursor: text;
+}
+
+.checklist-row .editor-checkbox {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.checklist-row .checklist-text {
+  flex-grow: 1;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-third); /* Текст совпадает по цвету с неотмеченным чекбоксом */
+  outline: none;
+  border: none;
+  background: transparent;
+  user-select: text;
+  -webkit-user-select: text;
+  word-break: break-word;
+  transition: color var(--t), opacity var(--t);
+}
+
+/* Плейсхолдер для пустого чекбокса */
+.checklist-row .checklist-text:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+/* Цвет при выполнении (в тон чекбоксу) */
+.checklist-row.checked-row .checklist-text {
+  text-decoration: none !important;
+  color: var(--accent-color);
+}
+
+/* Кнопка удаления строки чекбокса */
+.checklist-row .checklist-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-third);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none; /* Отключаем клики по умолчанию */
+  transition: opacity var(--t), color var(--t);
+  outline: none;
+  box-shadow: none;
+}
+
+.editor-block.is-editing .checklist-row:hover .checklist-delete-btn {
+  opacity: 0.6;
+  pointer-events: auto; /* Включаем клики при ховере в режиме редактирования */
+}
+
+.editor-block.is-editing .checklist-row .checklist-delete-btn:hover {
+  opacity: 1 !important;
+  color: #ff4545;
+  background: transparent !important;
+  pointer-events: auto;
+}
+
+/* Стилизация блоков редактора */
+.editor-block {
+  margin-bottom: 12px; /* Чуть меньше расстояния между блоками */
+  position: relative;
+  width: 100%;
+  background-color: var(--bg-sidebar); /* Видимый серый фон блока */
+  border: 1px solid var(--border-color); /* Обводка блока */
+  border-radius: 0; /* Убраны закругления */
+  padding: 0; /* Убираем паддинг, чтобы правая панель плотно прижималась к краям */
+  box-sizing: border-box;
+  transition: border-color var(--t), box-shadow var(--t);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.block-content-wrapper {
+  flex-grow: 1;
+  min-width: 0;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  height: 24px;
+}
+
+.block-subtitle {
+  font-family: var(--font-stack);
+  font-size: 16px; /* Подзаголовки больше текста (14px), но меньше главного заголовка (20px) */
+  font-weight: 600;
+  color: var(--text-color); /* Чёрный шрифт подзаголовка */
+  outline: none;
+  border: none;
+  background: transparent;
+  flex-grow: 1;
+}
+
+/* Плейсхолдер подзаголовка */
+.block-subtitle:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+.editor-block.is-editing {
+  border-color: var(--border-color); /* Сохраняем исходный цвет границы */
+  box-shadow: 0 0 0 2px var(--accent-color); /* Синяя обводка появляется строго снаружи блока */
+}
+
+/* Панель управления (блок справа) */
+.block-control-panel {
+  width: 38px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-editor); /* Белый фон */
+  border-left: 1px solid var(--border-color); /* Вертикальный разделитель */
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+}
+
+.control-top, .control-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+
+.block-btn {
+  width: 38px;
+  height: 38px; /* Кнопки квадратные 38x38px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  transition: background-color var(--t), color var(--t);
+}
+
+.block-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.block-btn:active {
+  background-color: var(--bg-active);
+}
+
+.block-btn .material-symbols-outlined {
+  font-size: 18px !important;
+}
+
+/* Скрываем/показываем кнопки в зависимости от режима */
+.editor-block.is-editing .btn-edit-block {
+  display: none;
+}
+.editor-block:not(.is-editing) .btn-save-block {
+  display: none;
+}
+
+/* Стили кнопки удаления */
+.block-btn.btn-delete-block:hover {
+  background-color: #ff000018;
+  color: #ff4545;
+}
+
+/* Тело текстового блока */
+.block-body {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
+  outline: none;
+  border: none;
+  background: transparent;
+  word-break: break-word;
+  min-height: 24px;
+}
+
+.block-body:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+/* Описание чек-листа */
+.block-description {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-color); /* Чёрный шрифт описания */
+  margin-bottom: 10px;
+  outline: none;
+  border: none;
+  background: transparent;
+  word-break: break-word;
+  min-height: 20px;
+}
+
+.block-description:empty:before {
+  content: attr(placeholder);
+  color: var(--text-third);
+  cursor: text;
+}
+
+/* Иконки приложения */
+.titlebar-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  object-fit: contain;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.modal-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  object-fit: contain;
+}
+
+/* Иконка заметки в сайдбаре */
+.note-item-icon {
+  font-size: 18px !important;
+  color: var(--text-third);
+  margin-right: 8px;
+  flex-shrink: 0;
+  transition: color var(--t);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-item.active .note-item-icon,
+.note-item.active .note-item-title {
+  color: var(--text-color); /* Черный при выборе */
+}
+
+.note-item:hover .note-item-icon,
+.note-item:hover .note-item-title {
+  color: var(--text-color); /* Черный при наведении */
+}
+
+/* Анимация проявления созданного блока */
+@keyframes newBlockFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.new-block-fade {
+  animation: newBlockFadeIn 0.3s ease-out forwards;
+}
