@@ -86,11 +86,19 @@ fn delete_note(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn open_in_browser(app_handle: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app_handle.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![load_notes, save_note, delete_note])
+        .invoke_handler(tauri::generate_handler![load_notes, save_note, delete_note, open_in_browser])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
