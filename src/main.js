@@ -24,10 +24,8 @@ let prefs = {
 const translations = {
   en: {
     searchPlaceholder: "Search",
-    newNoteTooltip: "Create new note",
     untitled: "Untitled",
     saveBtn: "Save",
-    saveUnsavedBtn: "Save *",
     savedFeedback: "Saved!",
     deleteConfirm: 'Are you sure you want to delete "{title}"?',
     emptyNote: "Empty note",
@@ -37,11 +35,7 @@ const translations = {
     themeDark: "Dark",
     themeSystem: "System",
     langLabel: "Language",
-    closeBtn: "Close",
     unsavedChangesPrompt: "You have unsaved changes. Save the current note?",
-    titlebarMinimize: "Minimize",
-    titlebarMaximize: "Maximize",
-    titlebarClose: "Close",
     settingsBtn: "Settings",
     btnAddText: "Add Text Block",
     btnAddChecklist: "Add Checklist Block",
@@ -73,10 +67,8 @@ const translations = {
   },
   ru: {
     searchPlaceholder: "Поиск",
-    newNoteTooltip: "Создать новую заметку",
     untitled: "Без названия",
     saveBtn: "Сохранить",
-    saveUnsavedBtn: "Сохранить *",
     savedFeedback: "Сохранено!",
     deleteConfirm: 'Вы действительно хотите удалить "{title}"?',
     emptyNote: "Пустая заметка",
@@ -86,11 +78,7 @@ const translations = {
     themeDark: "Темная",
     themeSystem: "Системная",
     langLabel: "Язык",
-    closeBtn: "Закрыть",
     unsavedChangesPrompt: "У вас есть несохраненные изменения. Сохранить текущую заметку?",
-    titlebarMinimize: "Свернуть",
-    titlebarMaximize: "Развернуть",
-    titlebarClose: "Закрыть",
     settingsBtn: "Настройки",
     btnAddText: "Добавить текст",
     btnAddChecklist: "Добавить чек-лист",
@@ -1320,17 +1308,7 @@ function updateUnsavedIndicator() {
   }
 }
 
-function getNotesDirectoryPath() {
-  for (let n of notes) {
-    if (n.path) {
-      const lastIndex = Math.max(n.path.lastIndexOf('/'), n.path.lastIndexOf('\\'));
-      if (lastIndex !== -1) {
-        return n.path.substring(0, lastIndex);
-      }
-    }
-  }
-  return "C:\\Users\\wassupbro\\Documents\\MD Notes";
-}
+
 
 // Вспомогательная функция для получения превью текста
 function getPlainTextPreview(html) {
@@ -1560,12 +1538,7 @@ function createChecklistBlockHTML() {
   return block;
 }
 
-// Извлечение имени файла из пути
-function getFilenameFromPath(path) {
-  if (!path) return "";
-  const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1];
-}
+
 
 // Генерация боковой панели управления блока (вместо футера)
 function createBlockControlPanelHTML() {
@@ -1657,20 +1630,7 @@ function getCleanContentHTML() {
   return temp.innerHTML;
 }
 
-// Проверка: находится ли фокус/выделение внутри уже созданного чек-листа
-function isSelectionInsideChecklist() {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    let node = selection.getRangeAt(0).startContainer;
-    while (node && node !== noteContentEl) {
-      if (node.nodeType === Node.ELEMENT_NODE && (node.classList.contains("checklist-text") || node.classList.contains("checklist-row"))) {
-        return true;
-      }
-      node = node.parentNode;
-    }
-  }
-  return false;
-}
+
 
 // Установка каретки в конец редактируемого элемента
 function placeCaretAtEnd(el) {
