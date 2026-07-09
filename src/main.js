@@ -10,6 +10,8 @@ let currentNoteId = null;
 let hasUnsavedChanges = false;
 let onDeleteConfirmCallback = null;
 let onUnsavedPromptCallback = null;
+let onDeleteBlockConfirmCallback = null;
+let activeOutsideClickFn = null;
 
 // Настройки приложения (значения по умолчанию)
 let prefs = {
@@ -24,7 +26,6 @@ const translations = {
     searchPlaceholder: "Search",
     newNoteTooltip: "Create new note",
     untitled: "Untitled",
-    placeholderText: "Start writing here",
     saveBtn: "Save",
     saveUnsavedBtn: "Save *",
     savedFeedback: "Saved!",
@@ -65,12 +66,15 @@ const translations = {
     btnUnsavedYes: "Save",
     btnUnsavedNo: "Don't Save",
     newNoteBtnText: "New Note",
+    confirmDeleteBlockTitle: "Delete Block",
+    deleteBlockConfirm: "Are you sure you want to delete this block?",
+    btnConfirmDeleteBlockOk: "Delete",
+    btnConfirmDeleteBlockCancel: "Cancel",
   },
   ru: {
     searchPlaceholder: "Поиск",
     newNoteTooltip: "Создать новую заметку",
     untitled: "Без названия",
-    placeholderText: "Начните писать здесь",
     saveBtn: "Сохранить",
     saveUnsavedBtn: "Сохранить *",
     savedFeedback: "Сохранено!",
@@ -111,6 +115,10 @@ const translations = {
     btnUnsavedYes: "Сохранить",
     btnUnsavedNo: "Не сохранять",
     newNoteBtnText: "Создать",
+    confirmDeleteBlockTitle: "Удаление блока",
+    deleteBlockConfirm: "Вы действительно хотите удалить этот блок?",
+    btnConfirmDeleteBlockOk: "Удалить",
+    btnConfirmDeleteBlockCancel: "Отмена",
   }
 };
 
@@ -159,6 +167,28 @@ window.addEventListener("DOMContentLoaded", async () => {
   settingLangEl = document.getElementById("setting-lang");
   settingThemeEl = document.getElementById("setting-theme");
 
+  // Элементы модального окна удаления блока
+  const confirmDeleteBlockModal = document.getElementById("confirm-delete-block-modal");
+  const confirmDeleteBlockClose = document.getElementById("confirm-delete-block-close");
+  const btnConfirmDeleteBlockCancel = document.getElementById("btn-confirm-delete-block-cancel");
+  const btnConfirmDeleteBlockOk = document.getElementById("btn-confirm-delete-block-ok");
+
+  const closeDeleteBlockModal = () => {
+    confirmDeleteBlockModal.classList.add("hidden");
+    onDeleteBlockConfirmCallback = null;
+  };
+
+  confirmDeleteBlockClose.addEventListener("click", closeDeleteBlockModal);
+  btnConfirmDeleteBlockCancel.addEventListener("click", closeDeleteBlockModal);
+  confirmDeleteBlockModal.addEventListener("click", (e) => {
+    if (e.target === confirmDeleteBlockModal) closeDeleteBlockModal();
+  });
+
+  btnConfirmDeleteBlockOk.addEventListener("click", () => {
+    if (onDeleteBlockConfirmCallback) {
+      onDeleteBlockConfirmCallback();
+    }
+  });
 
   // Настройка управления окном (Tauri window controls)
   setupTitlebarControls();
@@ -190,10 +220,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     const block = createTextBlockHTML();
     block.classList.add("new-block-fade");
     noteContentEl.appendChild(block);
-    const body = block.querySelector(".block-body");
-    if (body) body.focus({ preventScroll: true }); // Предотвращаем мгновенный скачок браузера при фокусе
+    const subtitle = block.querySelector(".block-subtitle");
+    if (subtitle) subtitle.focus({ preventScroll: true }); // Предотвращаем мгновенный скачок браузера при фокусе
     hasUnsavedChanges = true;
     updateUnsavedIndicator();
+    updateDeleteBlockButtonsVisibility();
     
     // Прокручиваем контейнер редактора в самый низ
     const container = document.querySelector(".editor-container");
@@ -207,10 +238,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     const block = createChecklistBlockHTML();
     block.classList.add("new-block-fade");
     noteContentEl.appendChild(block);
-    const textInput = block.querySelector(".checklist-text");
-    if (textInput) textInput.focus({ preventScroll: true }); // Предотвращаем мгновенный скачок браузера при фокусе
+    const subtitle = block.querySelector(".block-subtitle");
+    if (subtitle) subtitle.focus({ preventScroll: true }); // Предотвращаем мгновенный скачок браузера при фокусе
     hasUnsavedChanges = true;
     updateUnsavedIndicator();
+    updateDeleteBlockButtonsVisibility();
     
     // Прокручиваем контейнер редактора в самый низ
     const container = document.querySelector(".editor-container");
@@ -252,6 +284,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     updateUnsavedIndicator();
   });
 
+  // Переход с заголовка на описание при нажатии Enter
+  noteTitleEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      noteDescEl.focus();
+    }
+  });
+
   // Отслеживание изменений описания
   noteDescEl.addEventListener("input", () => {
     hasUnsavedChanges = true;
@@ -265,9 +305,119 @@ window.addEventListener("DOMContentLoaded", async () => {
     
     updateUnsavedIndicator();
   });
-  noteContentEl.addEventListener("input", () => {
+
+  // Очистка форматирования при вставке в описание заметки
+  noteDescEl.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    document.execCommand("insertText", false, text);
+  });
+
+  // Создание первого блока при нажатии Enter на описании
+  noteDescEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      
+      if (noteContentEl.children.length === 0) {
+        const block = createTextBlockHTML();
+        block.classList.add("new-block-fade");
+        noteContentEl.appendChild(block);
+        
+        block.classList.add("is-editing");
+        block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
+          el.setAttribute("contenteditable", "true");
+        });
+        
+        const subtitle = block.querySelector(".block-subtitle");
+        if (subtitle) {
+          subtitle.focus();
+        }
+        
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
+        updateDeleteBlockButtonsVisibility();
+      } else {
+        const firstBlock = noteContentEl.querySelector(".editor-block");
+        if (firstBlock) {
+          firstBlock.classList.add("is-editing");
+          firstBlock.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
+            el.setAttribute("contenteditable", "true");
+          });
+          const subtitle = firstBlock.querySelector(".block-subtitle");
+          if (subtitle) {
+            subtitle.focus();
+          }
+        }
+      }
+    }
+  });
+
+  // Запрет переноса строк и ограничение длины в подзаголовках блоков (100 символов)
+  noteContentEl.addEventListener("keydown", (e) => {
+    const subtitle = e.target.closest(".block-subtitle");
+    if (subtitle) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const block = subtitle.closest(".editor-block");
+        if (block) {
+          const body = block.querySelector(".block-body");
+          if (body) {
+            body.focus();
+          } else {
+            const desc = block.querySelector(".block-description");
+            if (desc) {
+              desc.focus();
+            } else {
+              const firstItem = block.querySelector(".checklist-text");
+              if (firstItem) {
+                firstItem.focus();
+              }
+            }
+          }
+        }
+        return;
+      }
+      
+      const isControlKey = e.ctrlKey || e.metaKey || e.altKey || 
+                           e.key === "Backspace" || e.key === "Delete" || 
+                           e.key.startsWith("Arrow") || e.key === "Tab";
+      
+      if (!isControlKey && subtitle.textContent.length >= 100) {
+        e.preventDefault();
+      }
+    }
+  });
+
+  // Очистка форматирования при вставке (вставляем только плоский текст во все элементы)
+  noteContentEl.addEventListener("paste", (e) => {
+    const subtitle = e.target.closest(".block-subtitle");
+    if (subtitle) {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text");
+      const cleanText = text.replace(/[\r\n]/g, "").substring(0, Math.max(0, 100 - subtitle.textContent.length));
+      if (cleanText.length > 0) {
+        document.execCommand("insertText", false, cleanText);
+      }
+    } else {
+      // Для всех остальных полей (тело блока, описание чек-листа, строки чек-листа)
+      // отключаем вставку форматированного HTML
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text");
+      document.execCommand("insertText", false, text);
+    }
+  });
+
+  noteContentEl.addEventListener("input", (e) => {
     hasUnsavedChanges = true;
     updateUnsavedIndicator();
+
+    const subtitle = e.target.closest(".block-subtitle");
+    if (subtitle) {
+      if (subtitle.textContent.length > 100) {
+        subtitle.textContent = subtitle.textContent.substring(0, 100);
+        placeCaretAtEnd(subtitle);
+      }
+    }
   });
 
   // Предотвращение выделения чекбоксов во всем редакторе
@@ -285,7 +435,19 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Отслеживание кликов по чекбоксам для изменения состояния и кнопок удаления/сохранения/редактирования
   noteContentEl.addEventListener("click", (e) => {
-    // 1. Клик по строке чек-листа (исключая кнопку удаления)
+    // 0. Клик по иконке блока (только в режиме редактирования)
+    const blockIcon = e.target.closest(".block-icon");
+    if (blockIcon) {
+      const block = blockIcon.closest(".editor-block");
+      const isEditing = block && block.classList.contains("is-editing");
+      if (isEditing) {
+        e.preventDefault();
+        openEmojiPicker(blockIcon);
+      }
+      return;
+    }
+
+    // 1. Клик по скролу/строке чек-листа (исключая кнопку удаления)
     const deleteBtnClick = e.target.closest(".checklist-delete-btn");
     if (!deleteBtnClick) {
       const row = e.target.closest(".checklist-row");
@@ -387,9 +549,10 @@ window.addEventListener("DOMContentLoaded", async () => {
       e.preventDefault();
       const block = deleteBlockBtn.closest(".editor-block");
       if (block) {
-        block.remove();
-        hasUnsavedChanges = true;
-        updateUnsavedIndicator();
+        const blocks = noteContentEl.querySelectorAll(".editor-block");
+        if (blocks.length > 1) {
+          showDeleteBlockConfirmModal(block);
+        }
       }
       return;
     }
@@ -689,7 +852,6 @@ function translateUI() {
   // Инпуты и плейсхолдеры
   searchInputEl.placeholder = t.searchPlaceholder;
   noteTitleEl.placeholder = t.untitled;
-  noteContentEl.setAttribute("placeholder", t.placeholderText);
   noteDescEl.setAttribute("placeholder", t.noteDescPlaceholder);
 
   // Кнопка сохранения
@@ -714,6 +876,12 @@ function translateUI() {
   document.getElementById("confirm-delete-title").textContent = t.confirmDeleteTitle;
   document.getElementById("btn-confirm-delete-cancel").textContent = t.btnConfirmDeleteCancel;
   document.getElementById("btn-confirm-delete-ok").textContent = t.btnConfirmDeleteOk;
+
+  // Локализация удаления блока
+  document.getElementById("confirm-delete-block-title").textContent = t.confirmDeleteBlockTitle;
+  document.getElementById("confirm-delete-block-message").textContent = t.deleteBlockConfirm;
+  document.getElementById("btn-confirm-delete-block-cancel").textContent = t.btnConfirmDeleteBlockCancel;
+  document.getElementById("btn-confirm-delete-block-ok").textContent = t.btnConfirmDeleteBlockOk;
 
   document.getElementById("unsaved-title").textContent = t.unsavedTitle;
   document.getElementById("unsaved-message").textContent = t.unsavedChangesPrompt;
@@ -867,16 +1035,80 @@ function selectNote(id) {
         block.appendChild(contentWrapper);
       }
       
-      // 2. Удаляем старые футеры / панели управления
+      // 2. Удаляем старые футеры / панели управления / панели цвета
       const oldFooter = block.querySelector(".block-footer");
       if (oldFooter) oldFooter.remove();
       
       const oldPanel = block.querySelector(".block-control-panel");
       if (oldPanel) oldPanel.remove();
       
-      // 3. Создаем свежую боковую панель
+      const oldColorPanel = block.querySelector(".block-color-panel");
+      if (oldColorPanel) oldColorPanel.remove();
+
+      // Убедимся, что есть основной ряд .block-main-row
+      let mainRow = block.querySelector(".block-main-row");
+      if (!mainRow) {
+        mainRow = document.createElement("div");
+        mainRow.className = "block-main-row";
+        if (contentWrapper) {
+          mainRow.appendChild(contentWrapper);
+        }
+        block.appendChild(mainRow);
+      }
+
+      // Убедимся, что в заголовке блока есть иконка .block-icon
+      const header = block.querySelector(".block-header");
+      if (header) {
+        let icon = header.querySelector(".block-icon");
+        if (!icon) {
+          icon = document.createElement("div");
+          icon.className = "block-icon material-symbols-outlined";
+          icon.setAttribute("data-icon", "");
+          header.insertBefore(icon, header.firstChild);
+        } else {
+          // Миграция со старого формата data-emoji на data-icon
+          if (!icon.classList.contains("material-symbols-outlined")) {
+            icon.classList.add("material-symbols-outlined");
+          }
+          if (icon.hasAttribute("data-emoji")) {
+            const oldEmoji = icon.getAttribute("data-emoji");
+            const emojiMap = {
+              "📝": "description", "💡": "lightbulb", "📌": "push_pin", "⚠️": "warning",
+              "🚀": "rocket_launch", "🎯": "target", "🔥": "local_fire_department",
+              "✅": "check_circle", "ℹ️": "info", "ℹ": "info", "📅": "calendar_month",
+              "💻": "terminal", "🎨": "palette", "⭐": "star", "❤️": "favorite", "🔔": "notifications"
+            };
+            const mappedIcon = emojiMap[oldEmoji] || "";
+            icon.setAttribute("data-icon", mappedIcon);
+            icon.textContent = mappedIcon;
+            icon.removeAttribute("data-emoji");
+          }
+        }
+      }
+      
+      // 3. Создаем свежие панели
       const panel = createBlockControlPanelHTML();
-      block.appendChild(panel);
+      mainRow.appendChild(panel);
+
+      // Находим текущий цветовой класс блока (по умолчанию color-default)
+      let activeColorClass = "color-default";
+      const classes = [
+        "color-default", "color-red", "color-orange", "color-yellow",
+        "color-green", "color-teal", "color-blue", "color-purple",
+        "color-pink", "color-gray"
+      ];
+      for (const cls of classes) {
+        if (block.classList.contains(cls)) {
+          activeColorClass = cls;
+          break;
+        }
+      }
+      if (!block.classList.contains(activeColorClass)) {
+        block.classList.add(activeColorClass);
+      }
+
+      const colorPanel = createBlockColorPanelHTML(activeColorClass);
+      block.appendChild(colorPanel);
       
       // 4. Блокируем редактирование на старте
       block.classList.remove("is-editing");
@@ -894,6 +1126,8 @@ function selectNote(id) {
         item.classList.remove("active");
       }
     });
+
+    updateDeleteBlockButtonsVisibility();
   }
 }
 
@@ -906,18 +1140,12 @@ function createNewNote() {
   const welcome = document.getElementById("welcome");
   if (container) container.classList.remove("hidden");
   if (welcome) welcome.classList.add("hidden");
-  
-  // Создаем дефолтный текстовый блок для новой заметки
-  const defaultBlock = createTextBlockHTML();
-  const tempContainer = document.createElement("div");
-  tempContainer.appendChild(defaultBlock);
-  const initialContent = tempContainer.innerHTML;
 
   const newNote = {
     id: newId,
     title: "",
     description: "",
-    content: initialContent,
+    content: "",
     updated_at: Date.now()
   };
 
@@ -927,13 +1155,8 @@ function createNewNote() {
   renderNotesList();
   selectNote(newId);
   
-  // Фокусируемся на теле первого блока
-  const firstBody = noteContentEl.querySelector(".block-body");
-  if (firstBody) {
-    firstBody.focus();
-  } else {
-    noteTitleEl.focus();
-  }
+  // При создании новой заметки сразу фокусируемся на заголовке
+  noteTitleEl.focus();
 }
 
 // Сохранение заметки
@@ -1158,10 +1381,64 @@ function createChecklistRowHTML() {
 }
 
 // Генерация текстового блока
+function createBlockColorPanelHTML(currentClass) {
+  const panel = document.createElement("div");
+  panel.className = "block-color-panel";
+  panel.setAttribute("contenteditable", "false");
+
+  const colors = [
+    { className: "color-default", hex: "var(--bg-sidebar)" },
+    { className: "color-red", hex: "#ff4d4d" },
+    { className: "color-orange", hex: "#f97316" },
+    { className: "color-yellow", hex: "#ffb84d" },
+    { className: "color-green", hex: "#22c55e" },
+    { className: "color-teal", hex: "#14b8a6" },
+    { className: "color-blue", hex: "#3b82f6" },
+    { className: "color-purple", hex: "#a855f7" },
+    { className: "color-pink", hex: "#ec4899" },
+    { className: "color-gray", hex: "#8b8b8b" }
+  ];
+
+  // Определяем активный цвет
+  const activeClass = currentClass || "color-default";
+
+  colors.forEach(col => {
+    const swatch = document.createElement("button");
+    swatch.className = `color-swatch ${col.className === activeClass ? "active" : ""}`;
+    swatch.style.backgroundColor = col.hex;
+    swatch.title = col.className.replace("color-", "");
+
+    swatch.addEventListener("click", (e) => {
+      e.preventDefault();
+      const block = swatch.closest(".editor-block");
+      if (block) {
+        // Удаляем все старые цветовые классы
+        colors.forEach(c => block.classList.remove(c.className));
+        // Добавляем новый цветовой класс
+        block.classList.add(col.className);
+
+        // Обновляем активность свотчей в этой панели
+        panel.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("active"));
+        swatch.classList.add("active");
+
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
+      }
+    });
+
+    panel.appendChild(swatch);
+  });
+
+  return panel;
+}
+
 function createTextBlockHTML() {
   const block = document.createElement("div");
-  block.className = "editor-block text-block is-editing"; // Создается в режиме редактирования по умолчанию
+  block.className = "editor-block text-block is-editing color-default"; // Создается в режиме редактирования по умолчанию
   block.setAttribute("contenteditable", "false");
+
+  const mainRow = document.createElement("div");
+  mainRow.className = "block-main-row";
 
   const contentWrapper = document.createElement("div");
   contentWrapper.className = "block-content-wrapper";
@@ -1169,11 +1446,16 @@ function createTextBlockHTML() {
   const header = document.createElement("div");
   header.className = "block-header";
 
+  const icon = document.createElement("div");
+  icon.className = "block-icon material-symbols-outlined";
+  icon.setAttribute("data-icon", "");
+
   const subtitle = document.createElement("div");
   subtitle.className = "block-subtitle";
   subtitle.setAttribute("contenteditable", "true");
   subtitle.setAttribute("placeholder", translations[prefs.lang].blockSubtitlePlaceholder || "Subtitle...");
 
+  header.appendChild(icon);
   header.appendChild(subtitle);
 
   const body = document.createElement("div");
@@ -1186,8 +1468,13 @@ function createTextBlockHTML() {
 
   const controlPanel = createBlockControlPanelHTML();
 
-  block.appendChild(contentWrapper);
-  block.appendChild(controlPanel);
+  mainRow.appendChild(contentWrapper);
+  mainRow.appendChild(controlPanel);
+
+  const colorPanel = createBlockColorPanelHTML("color-default");
+
+  block.appendChild(mainRow);
+  block.appendChild(colorPanel);
 
   return block;
 }
@@ -1195,8 +1482,11 @@ function createTextBlockHTML() {
 // Генерация блока чек-листа
 function createChecklistBlockHTML() {
   const block = document.createElement("div");
-  block.className = "editor-block checklist-block is-editing"; // Создается в режиме редактирования по умолчанию
+  block.className = "editor-block checklist-block is-editing color-default"; // Создается в режиме редактирования по умолчанию
   block.setAttribute("contenteditable", "false");
+
+  const mainRow = document.createElement("div");
+  mainRow.className = "block-main-row";
 
   const contentWrapper = document.createElement("div");
   contentWrapper.className = "block-content-wrapper";
@@ -1204,11 +1494,16 @@ function createChecklistBlockHTML() {
   const header = document.createElement("div");
   header.className = "block-header";
 
+  const icon = document.createElement("div");
+  icon.className = "block-icon material-symbols-outlined";
+  icon.setAttribute("data-icon", "");
+
   const subtitle = document.createElement("div");
   subtitle.className = "block-subtitle";
   subtitle.setAttribute("contenteditable", "true");
   subtitle.setAttribute("placeholder", translations[prefs.lang].blockSubtitlePlaceholder || "Subtitle...");
 
+  header.appendChild(icon);
   header.appendChild(subtitle);
 
   const description = document.createElement("div");
@@ -1229,8 +1524,13 @@ function createChecklistBlockHTML() {
 
   const controlPanel = createBlockControlPanelHTML();
 
-  block.appendChild(contentWrapper);
-  block.appendChild(controlPanel);
+  mainRow.appendChild(contentWrapper);
+  mainRow.appendChild(controlPanel);
+
+  const colorPanel = createBlockColorPanelHTML("color-default");
+
+  block.appendChild(mainRow);
+  block.appendChild(colorPanel);
 
   return block;
 }
@@ -1314,6 +1614,12 @@ function getCleanContentHTML() {
     block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
       el.setAttribute("contenteditable", "false");
     });
+
+    const cp = block.querySelector(".block-control-panel");
+    if (cp) cp.remove();
+
+    const colP = block.querySelector(".block-color-panel");
+    if (colP) colP.remove();
   });
   
   return temp.innerHTML;
@@ -1344,6 +1650,118 @@ function placeCaretAtEnd(el) {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+  }
+}
+
+// Управление видимостью кнопки удаления блоков (если только 1 блок - кнопка скрывается)
+function updateDeleteBlockButtonsVisibility() {
+  const blocks = noteContentEl.querySelectorAll(".editor-block");
+  if (blocks.length <= 1) {
+    blocks.forEach(block => {
+      const deleteBtn = block.querySelector(".btn-delete-block");
+      if (deleteBtn) {
+        deleteBtn.classList.add("hidden");
+      }
+    });
+  } else {
+    blocks.forEach(block => {
+      const deleteBtn = block.querySelector(".btn-delete-block");
+      if (deleteBtn) {
+        deleteBtn.classList.remove("hidden");
+      }
+    });
+  }
+}
+
+// Показ окна подтверждения удаления блока
+function showDeleteBlockConfirmModal(block) {
+  const modal = document.getElementById("confirm-delete-block-modal");
+  const messageEl = document.getElementById("confirm-delete-block-message");
+  const t = translations[prefs.lang] || translations.en;
+  
+  messageEl.textContent = t.deleteBlockConfirm;
+  modal.classList.remove("hidden");
+  
+  onDeleteBlockConfirmCallback = () => {
+    modal.classList.add("hidden");
+    block.remove();
+    hasUnsavedChanges = true;
+    updateUnsavedIndicator();
+    updateDeleteBlockButtonsVisibility();
+    onDeleteBlockConfirmCallback = null;
+  };
+}
+
+// Показ всплывающего окна выбора иконки для блока (Google Material Icons)
+function openEmojiPicker(blockIcon) {
+  closeAllEmojiPickers();
+
+  const header = blockIcon.closest(".block-header");
+  if (!header) return;
+
+  const picker = document.createElement("div");
+  picker.className = "emoji-picker-popover";
+  picker.setAttribute("contenteditable", "false");
+
+  const icons = [
+    "description", "lightbulb", "push_pin", "warning",
+    "rocket_launch", "target", "local_fire_department",
+    "check_circle", "info", "calendar_month",
+    "terminal", "palette", "star", "favorite", "notifications"
+  ];
+
+  const grid = document.createElement("div");
+  grid.className = "emoji-picker-grid";
+
+  icons.forEach(iconName => {
+    const btn = document.createElement("button");
+    btn.className = "emoji-picker-btn material-symbols-outlined";
+    btn.textContent = iconName;
+    btn.title = iconName;
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      blockIcon.setAttribute("data-icon", iconName);
+      blockIcon.textContent = iconName;
+      closeAllEmojiPickers();
+      hasUnsavedChanges = true;
+      updateUnsavedIndicator();
+    });
+    grid.appendChild(btn);
+  });
+
+  picker.appendChild(grid);
+
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "emoji-picker-clear-btn";
+  clearBtn.textContent = prefs.lang === "ru" ? "Удалить иконку" : "Remove icon";
+  clearBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    blockIcon.setAttribute("data-icon", "");
+    blockIcon.textContent = "";
+    closeAllEmojiPickers();
+    hasUnsavedChanges = true;
+    updateUnsavedIndicator();
+  });
+  picker.appendChild(clearBtn);
+
+  header.appendChild(picker);
+
+  activeOutsideClickFn = (e) => {
+    if (!picker.contains(e.target) && e.target !== blockIcon) {
+      closeAllEmojiPickers();
+    }
+  };
+
+  setTimeout(() => {
+    document.addEventListener("click", activeOutsideClickFn);
+  }, 0);
+}
+
+function closeAllEmojiPickers() {
+  document.querySelectorAll(".emoji-picker-popover").forEach(p => p.remove());
+  if (activeOutsideClickFn) {
+    document.removeEventListener("click", activeOutsideClickFn);
+    activeOutsideClickFn = null;
   }
 }
 

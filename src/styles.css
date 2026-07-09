@@ -20,6 +20,17 @@
   --font-stack:   'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235d5d5d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   --t:            0.15s;
+  --accent-wave-1: #004dc0;
+  --accent-wave-2: #0088ff;
+  --block-bg-red: #ffebeb; --block-border-red: #fad4d4;
+  --block-bg-yellow: #fff9e6; --block-border-yellow: #fceebd;
+  --block-bg-green: #eafaf1; --block-border-green: #c7f3d6;
+  --block-bg-blue: #e8f4fd; --block-border-blue: #cbe5fb;
+  --block-bg-purple: #f3e8ff; --block-border-purple: #e9d5ff;
+  --block-bg-orange: #fff2e6; --block-border-orange: #ffd9b3;
+  --block-bg-pink: #fef0f6; --block-border-pink: #fcd9e6;
+  --block-bg-teal: #e6fcf5; --block-border-teal: #bbf7e3;
+  --block-bg-gray: #f5f5f5; --block-border-gray: #e5e5e5;
 }
 
 /* Принудительная темная тема (соответствие токенам MD Viewer) */
@@ -40,6 +51,17 @@ html[data-theme="dark"] {
   --accent-color: #60a5fa;
   --accent-text:  #000000;
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  --accent-wave-1: #3b82f6;
+  --accent-wave-2: #93c5fd;
+  --block-bg-red: #3d1a1a; --block-border-red: #5c2424;
+  --block-bg-yellow: #3d331a; --block-border-yellow: #5c4c24;
+  --block-bg-green: #1a3d24; --block-border-green: #245c34;
+  --block-bg-blue: #1a2c3d; --block-border-blue: #243f5c;
+  --block-bg-purple: #2c1a3d; --block-border-purple: #3f245c;
+  --block-bg-orange: #3d261a; --block-border-orange: #5c3a24;
+  --block-bg-pink: #3d1a29; --block-border-pink: #5c243c;
+  --block-bg-teal: #1a3d33; --block-border-teal: #245c4c;
+  --block-bg-gray: #2d2d2d; --block-border-gray: #404040;
 }
 
 /* Системная темная тема */
@@ -61,6 +83,17 @@ html[data-theme="dark"] {
     --accent-color: #60a5fa;
     --accent-text:  #000000;
     --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    --accent-wave-1: #3b82f6;
+    --accent-wave-2: #93c5fd;
+    --block-bg-red: #3d1a1a; --block-border-red: #5c2424;
+    --block-bg-yellow: #3d331a; --block-border-yellow: #5c4c24;
+    --block-bg-green: #1a3d24; --block-border-green: #245c34;
+    --block-bg-blue: #1a2c3d; --block-border-blue: #243f5c;
+    --block-bg-purple: #2c1a3d; --block-border-purple: #3f245c;
+    --block-bg-orange: #3d261a; --block-border-orange: #5c3a24;
+    --block-bg-pink: #3d1a29; --block-border-pink: #5c243c;
+    --block-bg-teal: #1a3d33; --block-border-teal: #245c4c;
+    --block-bg-gray: #2d2d2d; --block-border-gray: #404040;
   }
 }
 
@@ -94,6 +127,18 @@ html[data-theme="dark"] {
 input, #note-content, #note-content * {
   user-select: text !important;
   -webkit-user-select: text !important;
+}
+
+/* Запретить выделение служебных элементов внутри редактора */
+.material-symbols-outlined,
+.block-icon,
+.block-btn,
+.block-color-panel,
+.block-color-panel *,
+.emoji-picker-popover,
+.emoji-picker-popover * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 /* Скрытие скроллбаров в Chrome/Safari/Opera/Edge */
@@ -584,13 +629,6 @@ button, input, select, textarea {
   word-break: break-word;
 }
 
-/* Плейсхолдер для contenteditable */
-#note-content:empty:before {
-  content: attr(placeholder);
-  color: var(--text-third);
-  cursor: text;
-}
-
 /* Стили форматирования внутри редактора */
 #note-content h1 {
   font-size: 18px;
@@ -792,12 +830,14 @@ html[data-theme="dark"] .modal-content {
   cursor: default;
 }
 
-#btn-confirm-delete-ok {
+#btn-confirm-delete-ok,
+#btn-confirm-delete-block-ok {
   background-color: #ff4545;
   color: #ffffff;
 }
 
-#btn-confirm-delete-ok:hover {
+#btn-confirm-delete-ok:hover,
+#btn-confirm-delete-block-ok:hover {
   background-color: #d63030;
 }
 
@@ -987,10 +1027,17 @@ html[data-theme="dark"] .modal-content {
   border-radius: 0; /* Убраны закругления */
   padding: 0; /* Убираем паддинг, чтобы правая панель плотно прижималась к краям */
   box-sizing: border-box;
-  transition: border-color var(--t), box-shadow var(--t);
+  transition: border-color var(--t), background-color var(--t);
+  display: flex;
+  flex-direction: column; /* Изменяем на column, чтобы ряды шли друг под другом! */
+  align-items: stretch;
+}
+
+.block-main-row {
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  width: 100%;
 }
 
 .block-content-wrapper {
@@ -1005,6 +1052,7 @@ html[data-theme="dark"] .modal-content {
   align-items: center;
   margin-bottom: 6px;
   height: 24px;
+  position: relative;
 }
 
 .block-subtitle {
@@ -1025,9 +1073,23 @@ html[data-theme="dark"] .modal-content {
   cursor: text;
 }
 
-.editor-block.is-editing {
-  border-color: var(--border-color); /* Сохраняем исходный цвет границы */
-  box-shadow: 0 0 0 2px var(--accent-color); /* Синяя обводка появляется строго снаружи блока */
+/* Синяя обводка через псевдоэлемент с поддержкой плавного появления/исчезновения */
+.editor-block::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 3px solid var(--accent-color);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.25s ease;
+}
+
+.editor-block.is-editing::before {
+  opacity: 1;
 }
 
 /* Панель управления (блок справа) */
@@ -1038,11 +1100,12 @@ html[data-theme="dark"] .modal-content {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--bg-editor); /* Белый фон */
+  background-color: inherit; /* Наследует фоновый цвет блока! */
   border-left: 1px solid var(--border-color); /* Вертикальный разделитель */
   user-select: none;
   -webkit-user-select: none;
   box-sizing: border-box;
+  transition: background-color var(--t);
 }
 
 .control-top, .control-bottom {
@@ -1054,7 +1117,7 @@ html[data-theme="dark"] .modal-content {
 }
 
 .block-btn {
-  width: 38px;
+  width: 100%;
   height: 38px; /* Кнопки квадратные 38x38px */
   display: flex;
   align-items: center;
@@ -1070,11 +1133,25 @@ html[data-theme="dark"] .modal-content {
 }
 
 .block-btn:hover {
-  background-color: var(--bg-hover);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .block-btn:active {
-  background-color: var(--bg-active);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="dark"] .block-btn:hover,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .block-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+html[data-theme="dark"] .block-btn:active,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .block-btn:active {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
 }
 
 .block-btn .material-symbols-outlined {
@@ -1252,7 +1329,246 @@ html[data-theme="dark"] .modal-content {
   letter-spacing: -0.01em;
 }
 
+/* Панель выбора цвета (появляется снизу редактируемого блока) */
+.block-color-panel {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 16px;
+  gap: 12px;
+  background-color: inherit; /* Наследует фоновый цвет блока! */
+  border-top: 0 solid transparent; /* Начинаем без границы */
+  box-sizing: border-box;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: height 0.25s ease, opacity 0.25s ease, background-color var(--t), border-color var(--t);
+}
 
+.editor-block.is-editing .block-color-panel {
+  height: 38px;
+  opacity: 1;
+  border-top: 1px solid var(--border-color);
+}
 
+/* Кружочки выбора цвета */
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  padding: 0;
+}
 
+.color-swatch:hover {
+  transform: scale(1.18);
+}
 
+.color-swatch.active {
+  box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+/* Пользовательские цвета для блоков (подставляются из переменных) */
+.editor-block.color-red {
+  background-color: var(--block-bg-red);
+  border-color: var(--block-border-red);
+}
+.editor-block.color-red .block-control-panel,
+.editor-block.color-red .block-color-panel {
+  border-color: var(--block-border-red);
+}
+
+.editor-block.color-yellow {
+  background-color: var(--block-bg-yellow);
+  border-color: var(--block-border-yellow);
+}
+.editor-block.color-yellow .block-control-panel,
+.editor-block.color-yellow .block-color-panel {
+  border-color: var(--block-border-yellow);
+}
+
+.editor-block.color-green {
+  background-color: var(--block-bg-green);
+  border-color: var(--block-border-green);
+}
+.editor-block.color-green .block-control-panel,
+.editor-block.color-green .block-color-panel {
+  border-color: var(--block-border-green);
+}
+
+.editor-block.color-blue {
+  background-color: var(--block-bg-blue);
+  border-color: var(--block-border-blue);
+}
+.editor-block.color-blue .block-control-panel,
+.editor-block.color-blue .block-color-panel {
+  border-color: var(--block-border-blue);
+}
+
+.editor-block.color-purple {
+  background-color: var(--block-bg-purple);
+  border-color: var(--block-border-purple);
+}
+.editor-block.color-purple .block-control-panel,
+.editor-block.color-purple .block-color-panel {
+  border-color: var(--block-border-purple);
+}
+
+.editor-block.color-orange {
+  background-color: var(--block-bg-orange);
+  border-color: var(--block-border-orange);
+}
+.editor-block.color-orange .block-control-panel,
+.editor-block.color-orange .block-color-panel {
+  border-color: var(--block-border-orange);
+}
+
+.editor-block.color-pink {
+  background-color: var(--block-bg-pink);
+  border-color: var(--block-border-pink);
+}
+.editor-block.color-pink .block-control-panel,
+.editor-block.color-pink .block-color-panel {
+  border-color: var(--block-border-pink);
+}
+
+.editor-block.color-teal {
+  background-color: var(--block-bg-teal);
+  border-color: var(--block-border-teal);
+}
+.editor-block.color-teal .block-control-panel,
+.editor-block.color-teal .block-color-panel {
+  border-color: var(--block-border-teal);
+}
+
+.editor-block.color-gray {
+  background-color: var(--block-bg-gray);
+  border-color: var(--block-border-gray);
+}
+.editor-block.color-gray .block-control-panel,
+.editor-block.color-gray .block-color-panel {
+  border-color: var(--block-border-gray);
+}
+
+/* Иконка перед подзаголовком */
+.block-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 18px;
+  margin-right: 8px;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: background-color var(--t);
+}
+
+/* В режиме редактирования кликабельно */
+.editor-block.is-editing .block-icon {
+  cursor: pointer;
+}
+
+.editor-block.is-editing .block-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+html[data-theme="dark"] .editor-block.is-editing .block-icon:hover,
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .editor-block.is-editing .block-icon:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* В режиме просмотра скрываем пустые иконки */
+.editor-block:not(.is-editing) .block-icon:not([data-icon]),
+.editor-block:not(.is-editing) .block-icon[data-icon=""] {
+  display: none;
+}
+
+/* В режиме редактирования, если иконка пустая, показываем иконку-плейсхолдер */
+.editor-block.is-editing .block-icon:empty::before,
+.editor-block.is-editing .block-icon[data-icon=""]::before {
+  content: "add_reaction";
+  font-family: 'Material Symbols Outlined';
+  font-size: 20px;
+  color: var(--text-third);
+  display: block;
+}
+
+/* Поповер выбора эмодзи */
+.emoji-picker-popover {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  background-color: var(--bg-editor);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 120;
+  width: 172px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.emoji-picker-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.emoji-picker-btn:hover {
+  background-color: var(--bg-hover);
+  transform: scale(1.15);
+}
+
+.emoji-picker-clear-btn {
+  width: 100%;
+  padding: 6px;
+  font-family: var(--font-stack);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--t), color var(--t);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.emoji-picker-clear-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-color);
+}
