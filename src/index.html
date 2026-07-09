@@ -11,6 +11,11 @@
   </head>
 
   <body>
+    <!-- Splash screen — hides FOUC, fades out after 500ms -->
+    <div id="splash">
+      <div class="splash-ring"></div>
+    </div>
+
     <div class="app-container">
       <!-- Кастомный заголовок окна (Titlebar) -->
       <div id="titlebar" data-tauri-drag-region>
@@ -37,27 +42,23 @@
       <header class="app-toolbar">
         <div class="toolbar-left">
           <div class="search-container">
+            <span class="material-symbols-outlined search-icon">search</span>
             <input type="text" id="search-input" placeholder="Поиск заметок..." autocomplete="off" />
             <button id="search-clear-btn" class="search-clear-btn hidden">&#10005;</button>
           </div>
         </div>
         
         <div class="toolbar-middle">
-          <div class="format-buttons">
+          <div class="block-creation-buttons">
             <button class="toolbar-btn" id="btn-add-text">
               <span class="material-symbols-outlined">notes</span>
+              <span id="btn-add-text-text">Text</span>
             </button>
             <button class="toolbar-btn" id="btn-add-checklist">
               <span class="material-symbols-outlined">checklist</span>
+              <span id="btn-add-checklist-text">Checklist</span>
             </button>
           </div>
-        </div>
-
-        <div class="toolbar-right">
-          <button class="toolbar-btn" id="btn-bold"><span class="material-symbols-outlined">format_bold</span></button>
-          <button class="toolbar-btn" id="btn-italic"><span class="material-symbols-outlined">format_italic</span></button>
-          <button class="toolbar-btn" id="btn-underline"><span class="material-symbols-outlined">format_underlined</span></button>
-          <button class="toolbar-btn" id="btn-strike"><span class="material-symbols-outlined">format_strikethrough</span></button>
         </div>
       </header>
 
@@ -74,10 +75,22 @@
         <main class="editor-area">
           <div class="editor-container">
             <input type="text" id="note-title" placeholder="Без названия" autocomplete="off" />
-            <div id="note-desc" contenteditable="true" placeholder="Описание заметки..."></div>
-            <div id="note-content" contenteditable="true" placeholder="Начните писать здесь..."></div>
+            <div id="note-desc" contenteditable="true" placeholder="Описание заметки"></div>
+            <div id="note-content" contenteditable="false" placeholder="Начните писать здесь"></div>
           </div>
-        </main>
+          <!-- Welcome empty state -->
+          <div class="welcome hidden" id="welcome">
+            <div class="welcome-icon">
+              <svg width="36" height="36" viewBox="0 0 16 16" fill="none">
+                <path d="M2.5 1h8L14 4.5V15a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 2 15V1.5A.5.5 0 0 1 2.5 1z" stroke="currentColor" stroke-linejoin="round"/>
+                <path d="M10.5 1v3.5H14" stroke="currentColor" stroke-linejoin="round"/>
+                <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="currentColor" stroke-linecap="round"/>
+                <line x1="5" y1="10"  x2="11" y2="10"  stroke="currentColor" stroke-linecap="round"/>
+                <line x1="5" y1="12.5" x2="9" y2="12.5" stroke="currentColor" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h1>MD Notes</h1>
+          </div>        </main>
       </div>
     </div>
 
@@ -140,6 +153,5 @@
           <button id="btn-unsaved-yes" class="modal-btn-ok">Save</button>
         </div>
       </div>
-    </div>
   </body>
 </html>

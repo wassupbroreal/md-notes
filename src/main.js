@@ -1,5 +1,9 @@
-const { invoke } = window.__TAURI__.core;
-const { getCurrentWindow } = window.__TAURI__.window;
+const invoke = window.__TAURI__?.core?.invoke || (() => Promise.resolve([]));
+const getCurrentWindow = window.__TAURI__?.window?.getCurrentWindow || (() => ({
+  minimize: () => {},
+  toggleMaximize: () => {},
+  close: () => {}
+}));
 
 let notes = [];
 let currentNoteId = null;
@@ -17,10 +21,10 @@ let prefs = {
 // Словари локализации
 const translations = {
   en: {
-    searchPlaceholder: "Search notes...",
+    searchPlaceholder: "Search",
     newNoteTooltip: "Create new note",
     untitled: "Untitled",
-    placeholderText: "Start writing here...",
+    placeholderText: "Start writing here",
     saveBtn: "Save",
     saveUnsavedBtn: "Save *",
     savedFeedback: "Saved!",
@@ -38,22 +42,20 @@ const translations = {
     titlebarMaximize: "Maximize",
     titlebarClose: "Close",
     settingsBtn: "Settings",
-    btnBold: "Bold",
-    btnItalic: "Italic",
-    btnUnderline: "Underline",
-    btnStrike: "Strikethrough",
     btnAddText: "Add Text Block",
     btnAddChecklist: "Add Checklist Block",
-    blockSubtitlePlaceholder: "Subtitle...",
-    blockBodyPlaceholder: "Write text here...",
-    blockDescPlaceholder: "Description...",
-    checklistPlaceholder: "Task...",
+    btnAddTextLabel: "Text",
+    btnAddChecklistLabel: "Checklist",
+    blockSubtitlePlaceholder: "Subtitle",
+    blockBodyPlaceholder: "Write text here",
+    blockDescPlaceholder: "Description",
+    checklistPlaceholder: "Task",
     btnEditBlock: "Edit",
     btnSaveBlock: "Save",
     btnDeleteBlock: "Delete",
     btnMoveUp: "Move Up",
     btnMoveDown: "Move Down",
-    noteDescPlaceholder: "Description...",
+    noteDescPlaceholder: "Description",
     savedStatus: "Saved",
     unsavedStatus: "Unsaved",
     confirmDeleteTitle: "Delete Note",
@@ -65,10 +67,10 @@ const translations = {
     newNoteBtnText: "New Note",
   },
   ru: {
-    searchPlaceholder: "Поиск заметок...",
+    searchPlaceholder: "Поиск",
     newNoteTooltip: "Создать новую заметку",
     untitled: "Без названия",
-    placeholderText: "Начните писать здесь...",
+    placeholderText: "Начните писать здесь",
     saveBtn: "Сохранить",
     saveUnsavedBtn: "Сохранить *",
     savedFeedback: "Сохранено!",
@@ -86,23 +88,20 @@ const translations = {
     titlebarMaximize: "Развернуть",
     titlebarClose: "Закрыть",
     settingsBtn: "Настройки",
-    btnBold: "Жирный",
-    btnItalic: "Курсив",
-    btnUnderline: "Подчеркнутый",
-    btnStrike: "Зачеркнутый",
-    btnChecklist: "Чек-лист",
     btnAddText: "Добавить текст",
     btnAddChecklist: "Добавить чек-лист",
-    blockSubtitlePlaceholder: "Подзаголовок...",
-    blockBodyPlaceholder: "Напишите текст...",
-    blockDescPlaceholder: "Описание...",
-    checklistPlaceholder: "Задача...",
+    btnAddTextLabel: "Текст",
+    btnAddChecklistLabel: "Чек-лист",
+    blockSubtitlePlaceholder: "Подзаголовок",
+    blockBodyPlaceholder: "Напишите текст",
+    blockDescPlaceholder: "Описание",
+    checklistPlaceholder: "Задача",
     btnEditBlock: "Редактировать",
     btnSaveBlock: "Сохранить",
     btnDeleteBlock: "Удалить",
     btnMoveUp: "Переместить вверх",
     btnMoveDown: "Переместить вниз",
-    noteDescPlaceholder: "Описание заметки...",
+    noteDescPlaceholder: "Описание заметки",
     savedStatus: "Сохранено",
     unsavedStatus: "Не сохранено",
     confirmDeleteTitle: "Удаление заметки",
@@ -125,8 +124,9 @@ let noteDescEl;
 let noteContentEl;
 let saveBtnEl;
 
-// Кнопки форматирования
-let btnBold, btnItalic, btnUnderline, btnStrike, btnAddText, btnAddChecklist;
+// Кнопки создания блоков
+let btnAddText, btnAddChecklist;
+
 
 // Элементы настроек
 let settingsBtnEl;
@@ -149,10 +149,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   noteContentEl = document.getElementById("note-content");
   saveBtnEl = document.getElementById("save-btn");
 
-  btnBold = document.getElementById("btn-bold");
-  btnItalic = document.getElementById("btn-italic");
-  btnUnderline = document.getElementById("btn-underline");
-  btnStrike = document.getElementById("btn-strike");
   btnAddText = document.getElementById("btn-add-text");
   btnAddChecklist = document.getElementById("btn-add-checklist");
 
@@ -163,14 +159,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   settingLangEl = document.getElementById("setting-lang");
   settingThemeEl = document.getElementById("setting-theme");
 
+
   // Настройка управления окном (Tauri window controls)
   setupTitlebarControls();
 
-  // Слушатели событий для форматирования
-  setupFormattingButtons();
-
   // Инициализация интерфейса настроек
   setupSettingsListeners();
+
 
   // Основные кнопки
   newNoteBtnEl.addEventListener("click", () => {
@@ -191,6 +186,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Создание новых блоков
   btnAddText.addEventListener("click", () => {
+    if (!currentNoteId) return;
     const block = createTextBlockHTML();
     block.classList.add("new-block-fade");
     noteContentEl.appendChild(block);
@@ -207,6 +203,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   btnAddChecklist.addEventListener("click", () => {
+    if (!currentNoteId) return;
     const block = createChecklistBlockHTML();
     block.classList.add("new-block-fade");
     noteContentEl.appendChild(block);
@@ -508,9 +505,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Отслеживание выделения текста для обновления кнопок
-  noteContentEl.addEventListener("keyup", updateToolbarState);
-  noteContentEl.addEventListener("mouseup", updateToolbarState);
+
 
   // Хоткей Ctrl + S для сохранения (раскладка-независимый)
   window.addEventListener("keydown", (e) => {
@@ -564,12 +559,27 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Применяем текущие настройки к элементам UI
-  applySettingsPrefs();
-  translateUI();
+  try {
+    // Применяем текущие настройки к элементам UI
+    applySettingsPrefs();
+    translateUI();
 
-  // Первоначальная загрузка заметок
-  await loadNotes();
+    // Первоначальная загрузка заметок
+    await loadNotes();
+  } catch (err) {
+    console.error("Ошибка при инициализации приложения:", err);
+  } finally {
+    // Отключение экрана загрузки (splash screen) после инициализации
+    const splash = document.getElementById("splash");
+    if (splash) {
+      setTimeout(() => {
+        splash.classList.add("fade-out");
+        setTimeout(() => {
+          splash.style.display = "none";
+        }, 380);
+      }, 500);
+    }
+  }
 });
 
 // Управление окном через Titlebar
@@ -589,31 +599,7 @@ function setupTitlebarControls() {
   });
 }
 
-// Настройка форматирования без потери фокуса ввода
-function setupFormattingButtons() {
-  const buttons = [
-    { el: btnBold, cmd: "bold" },
-    { el: btnItalic, cmd: "italic" },
-    { el: btnUnderline, cmd: "underline" },
-    { el: btnStrike, cmd: "strikeThrough" }
-  ];
 
-  buttons.forEach(({ el, cmd, val = null }) => {
-    if (!el) return;
-    
-    el.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-    });
-
-    el.addEventListener("click", () => {
-      document.execCommand(cmd, false, val);
-      noteContentEl.focus();
-      updateToolbarState();
-      hasUnsavedChanges = true;
-      updateUnsavedIndicator();
-    });
-  });
-}
 
 // Настройка панели настроек
 function setupSettingsListeners() {
@@ -702,8 +688,9 @@ function translateUI() {
 
   // Инпуты и плейсхолдеры
   searchInputEl.placeholder = t.searchPlaceholder;
+  noteTitleEl.placeholder = t.untitled;
   noteContentEl.setAttribute("placeholder", t.placeholderText);
-  noteDescEl.setAttribute("placeholder", t.noteDescPlaceholder || "Description...");
+  noteDescEl.setAttribute("placeholder", t.noteDescPlaceholder);
 
   // Кнопка сохранения
   updateUnsavedIndicator();
@@ -733,6 +720,33 @@ function translateUI() {
   document.getElementById("btn-unsaved-no").textContent = t.btnUnsavedNo;
   document.getElementById("btn-unsaved-yes").textContent = t.btnUnsavedYes;
 
+  // Тултипы/подсказки кнопок тулбара и текстовые надписи
+  if (btnAddText) {
+    btnAddText.title = t.btnAddText;
+    const txtEl = document.getElementById("btn-add-text-text");
+    if (txtEl) txtEl.textContent = t.btnAddTextLabel;
+  }
+  if (btnAddChecklist) {
+    btnAddChecklist.title = t.btnAddChecklist;
+    const txtEl = document.getElementById("btn-add-checklist-text");
+    if (txtEl) txtEl.textContent = t.btnAddChecklistLabel;
+  }
+
+  // Локализация кнопок в блоках редактора
+  document.querySelectorAll(".btn-move-up").forEach(el => el.title = t.btnMoveUp);
+  document.querySelectorAll(".btn-move-down").forEach(el => el.title = t.btnMoveDown);
+  document.querySelectorAll(".btn-edit-block").forEach(el => el.title = t.btnEditBlock);
+  document.querySelectorAll(".btn-save-block").forEach(el => el.title = t.btnSaveBlock);
+  document.querySelectorAll(".btn-delete-block").forEach(el => el.title = t.btnDeleteBlock);
+
+  // Локализация плейсхолдеров в блоках редактора
+  document.querySelectorAll(".block-subtitle").forEach(el => el.setAttribute("placeholder", t.blockSubtitlePlaceholder));
+  document.querySelectorAll(".block-body").forEach(el => el.setAttribute("placeholder", t.blockBodyPlaceholder));
+  document.querySelectorAll(".block-description").forEach(el => el.setAttribute("placeholder", t.blockDescPlaceholder));
+  document.querySelectorAll(".checklist-text").forEach(el => el.setAttribute("placeholder", t.checklistPlaceholder));
+
+
+
   // Перерендерить список заметок, чтобы обновить плейсхолдеры
   renderNotesList();
 }
@@ -746,7 +760,7 @@ async function loadNotes() {
     if (notes.length > 0) {
       selectNote(notes[0].id);
     } else {
-      createNewNote();
+      showWelcomeScreen();
     }
   } catch (err) {
     console.error("Не удалось загрузить заметки:", err);
@@ -815,8 +829,14 @@ function selectNote(id) {
   currentNoteId = id;
   const note = notes.find(n => n.id === id);
   if (note) {
-    // Сброс и перезапуск анимации плавного проявления контента редактора
     const container = document.querySelector(".editor-container");
+    const welcome = document.getElementById("welcome");
+
+    // Показываем контейнер редактора и скрываем приветствие
+    if (container) container.classList.remove("hidden");
+    if (welcome) welcome.classList.add("hidden");
+
+    // Сброс и перезапуск анимации плавного проявления контента редактора
     if (container) {
       container.classList.remove("fade-active");
       void container.offsetHeight; // форсируем reflow для сброса анимации
@@ -867,7 +887,6 @@ function selectNote(id) {
 
     hasUnsavedChanges = false;
     updateUnsavedIndicator();
-    
     document.querySelectorAll(".note-item").forEach(item => {
       if (item.getAttribute("data-id") === id) {
         item.classList.add("active");
@@ -881,6 +900,12 @@ function selectNote(id) {
 // Создание новой заметки
 function createNewNote() {
   const newId = crypto.randomUUID();
+  
+  // Показываем контейнер редактора и скрываем приветствие
+  const container = document.querySelector(".editor-container");
+  const welcome = document.getElementById("welcome");
+  if (container) container.classList.remove("hidden");
+  if (welcome) welcome.classList.add("hidden");
   
   // Создаем дефолтный текстовый блок для новой заметки
   const defaultBlock = createTextBlockHTML();
@@ -968,7 +993,7 @@ function showDeleteConfirmModal(noteId, noteTitle) {
         if (notes.length > 0) {
           selectNote(notes[0].id);
         } else {
-          createNewNote();
+          showWelcomeScreen();
         }
       }
     } catch (err) {
@@ -976,6 +1001,22 @@ function showDeleteConfirmModal(noteId, noteTitle) {
     }
     onDeleteConfirmCallback = null;
   };
+}
+
+// Показ экрана приветствия при отсутствии заметок
+function showWelcomeScreen() {
+  currentNoteId = null;
+  hasUnsavedChanges = false;
+
+  const container = document.querySelector(".editor-container");
+  const welcome = document.getElementById("welcome");
+  if (container) container.classList.add("hidden");
+  if (welcome) welcome.classList.remove("hidden");
+
+  const winTitleEl = document.getElementById("win-title");
+  if (winTitleEl) winTitleEl.textContent = "";
+
+  updateUnsavedIndicator();
 }
 
 // Проверка и предложение сохранить изменения перед переключением/созданием
@@ -1002,22 +1043,7 @@ function checkAndPromptSave(onComplete) {
   }
 }
 
-// Обновление состояния кнопок форматирования на панели
-function updateToolbarState() {
-  toggleActiveState(btnBold, "bold");
-  toggleActiveState(btnItalic, "italic");
-  toggleActiveState(btnUnderline, "underline");
-  toggleActiveState(btnStrike, "strikeThrough");
-}
 
-function toggleActiveState(btn, cmd) {
-  if (!btn) return;
-  if (document.queryCommandState(cmd)) {
-    btn.classList.add("active");
-  } else {
-    btn.classList.remove("active");
-  }
-}
 
 // Индикатор несохраненных изменений
 function updateUnsavedIndicator() {
@@ -1237,6 +1263,10 @@ function createBlockControlPanelHTML() {
   moveDownBtn.setAttribute("contenteditable", "false");
   moveDownBtn.innerHTML = `<span class="material-symbols-outlined">arrow_downward</span>`;
 
+  const t = translations[prefs.lang] || translations.en;
+  moveUpBtn.title = t.btnMoveUp;
+  moveDownBtn.title = t.btnMoveDown;
+
   topGroup.appendChild(moveUpBtn);
   topGroup.appendChild(moveDownBtn);
 
@@ -1248,16 +1278,19 @@ function createBlockControlPanelHTML() {
   const editBtn = document.createElement("button");
   editBtn.className = "block-btn btn-edit-block";
   editBtn.setAttribute("contenteditable", "false");
+  editBtn.title = t.btnEditBlock;
   editBtn.innerHTML = `<span class="material-symbols-outlined">edit</span>`;
 
   const saveBtn = document.createElement("button");
   saveBtn.className = "block-btn btn-save-block";
   saveBtn.setAttribute("contenteditable", "false");
+  saveBtn.title = t.btnSaveBlock;
   saveBtn.innerHTML = `<span class="material-symbols-outlined">save</span>`;
 
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "block-btn btn-delete-block";
   deleteBtn.setAttribute("contenteditable", "false");
+  deleteBtn.title = t.btnDeleteBlock;
   deleteBtn.innerHTML = `<span class="material-symbols-outlined">delete</span>`;
 
   bottomGroup.appendChild(editBtn);
@@ -1313,3 +1346,4 @@ function placeCaretAtEnd(el) {
     sel.addRange(range);
   }
 }
+
