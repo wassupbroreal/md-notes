@@ -20,7 +20,6 @@ let prefs = {
   fontSize: "14"
 };
 
-// Словари локализации
 const translations = {
   en: {
     searchPlaceholder: "Search",
@@ -37,19 +36,12 @@ const translations = {
     langLabel: "Language",
     unsavedChangesPrompt: "You have unsaved changes. Save the current note?",
     settingsBtn: "Settings",
-    btnAddText: "Add Text Block",
-    btnAddChecklist: "Add Checklist Block",
     btnAddTextLabel: "Text",
     btnAddChecklistLabel: "Checklist",
     blockSubtitlePlaceholder: "Subtitle",
     blockBodyPlaceholder: "Write text here",
     blockDescPlaceholder: "Description",
     checklistPlaceholder: "Task",
-    btnEditBlock: "Edit",
-    btnSaveBlock: "Save",
-    btnDeleteBlock: "Delete",
-    btnMoveUp: "Move Up",
-    btnMoveDown: "Move Down",
     noteDescPlaceholder: "Description",
     savedStatus: "Saved",
     unsavedStatus: "Unsaved",
@@ -80,19 +72,12 @@ const translations = {
     langLabel: "Язык",
     unsavedChangesPrompt: "У вас есть несохраненные изменения. Сохранить текущую заметку?",
     settingsBtn: "Настройки",
-    btnAddText: "Добавить текст",
-    btnAddChecklist: "Добавить чек-лист",
     btnAddTextLabel: "Текст",
     btnAddChecklistLabel: "Чек-лист",
     blockSubtitlePlaceholder: "Подзаголовок",
     blockBodyPlaceholder: "Напишите текст",
     blockDescPlaceholder: "Описание",
     checklistPlaceholder: "Задача",
-    btnEditBlock: "Редактировать",
-    btnSaveBlock: "Сохранить",
-    btnDeleteBlock: "Удалить",
-    btnMoveUp: "Переместить вверх",
-    btnMoveDown: "Переместить вниз",
     noteDescPlaceholder: "Описание заметки",
     savedStatus: "Сохранено",
     unsavedStatus: "Не сохранено",
@@ -894,24 +879,15 @@ function translateUI() {
   document.getElementById("btn-unsaved-no").textContent = t.btnUnsavedNo;
   document.getElementById("btn-unsaved-yes").textContent = t.btnUnsavedYes;
 
-  // Тултипы/подсказки кнопок тулбара и текстовые надписи
+  // Текстовые надписи кнопок тулбара
   if (btnAddText) {
-    btnAddText.title = t.btnAddText;
     const txtEl = document.getElementById("btn-add-text-text");
     if (txtEl) txtEl.textContent = t.btnAddTextLabel;
   }
   if (btnAddChecklist) {
-    btnAddChecklist.title = t.btnAddChecklist;
     const txtEl = document.getElementById("btn-add-checklist-text");
     if (txtEl) txtEl.textContent = t.btnAddChecklistLabel;
   }
-
-  // Локализация кнопок в блоках редактора
-  document.querySelectorAll(".btn-move-up").forEach(el => el.title = t.btnMoveUp);
-  document.querySelectorAll(".btn-move-down").forEach(el => el.title = t.btnMoveDown);
-  document.querySelectorAll(".btn-edit-block").forEach(el => el.title = t.btnEditBlock);
-  document.querySelectorAll(".btn-save-block").forEach(el => el.title = t.btnSaveBlock);
-  document.querySelectorAll(".btn-delete-block").forEach(el => el.title = t.btnDeleteBlock);
 
   // Локализация плейсхолдеров в блоках редактора
   document.querySelectorAll(".block-subtitle").forEach(el => el.setAttribute("placeholder", t.blockSubtitlePlaceholder));
@@ -1409,7 +1385,6 @@ function createBlockColorPanelHTML(currentClass) {
     const swatch = document.createElement("button");
     swatch.className = `color-swatch ${col.className === activeClass ? "active" : ""}`;
     swatch.style.backgroundColor = col.hex;
-    swatch.title = col.className.replace("color-", "");
 
     swatch.addEventListener("click", (e) => {
       e.preventDefault();
@@ -1561,10 +1536,6 @@ function createBlockControlPanelHTML() {
   moveDownBtn.setAttribute("contenteditable", "false");
   moveDownBtn.innerHTML = `<span class="material-symbols-outlined">arrow_downward</span>`;
 
-  const t = translations[prefs.lang] || translations.en;
-  moveUpBtn.title = t.btnMoveUp;
-  moveDownBtn.title = t.btnMoveDown;
-
   topGroup.appendChild(moveUpBtn);
   topGroup.appendChild(moveDownBtn);
 
@@ -1576,19 +1547,16 @@ function createBlockControlPanelHTML() {
   const editBtn = document.createElement("button");
   editBtn.className = "block-btn btn-edit-block";
   editBtn.setAttribute("contenteditable", "false");
-  editBtn.title = t.btnEditBlock;
   editBtn.innerHTML = `<span class="material-symbols-outlined">edit</span>`;
 
   const saveBtn = document.createElement("button");
   saveBtn.className = "block-btn btn-save-block";
   saveBtn.setAttribute("contenteditable", "false");
-  saveBtn.title = t.btnSaveBlock;
   saveBtn.innerHTML = `<span class="material-symbols-outlined">save</span>`;
 
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "block-btn btn-delete-block";
   deleteBtn.setAttribute("contenteditable", "false");
-  deleteBtn.title = t.btnDeleteBlock;
   deleteBtn.innerHTML = `<span class="material-symbols-outlined">delete</span>`;
 
   bottomGroup.appendChild(editBtn);
@@ -1709,7 +1677,6 @@ function openEmojiPicker(blockIcon) {
     const btn = document.createElement("button");
     btn.className = "emoji-picker-btn material-symbols-outlined";
     btn.textContent = iconName;
-    btn.title = iconName;
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       blockIcon.setAttribute("data-icon", iconName);
