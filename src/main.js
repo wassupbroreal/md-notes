@@ -326,11 +326,12 @@ window.addEventListener("DOMContentLoaded", async () => {
         block.classList.add("is-editing");
         block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
           el.setAttribute("contenteditable", "true");
+          el.innerHTML = unlinkifyHtml(el.innerHTML);
         });
         
         const subtitle = block.querySelector(".block-subtitle");
         if (subtitle) {
-          subtitle.focus();
+          subtitle.focus({ preventScroll: true });
         }
         
         hasUnsavedChanges = true;
@@ -342,10 +343,11 @@ window.addEventListener("DOMContentLoaded", async () => {
           firstBlock.classList.add("is-editing");
           firstBlock.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
             el.setAttribute("contenteditable", "true");
+            el.innerHTML = unlinkifyHtml(el.innerHTML);
           });
           const subtitle = firstBlock.querySelector(".block-subtitle");
           if (subtitle) {
-            subtitle.focus();
+            subtitle.focus({ preventScroll: true });
           }
         }
       }
@@ -362,15 +364,15 @@ window.addEventListener("DOMContentLoaded", async () => {
         if (block) {
           const body = block.querySelector(".block-body");
           if (body) {
-            body.focus();
+            body.focus({ preventScroll: true });
           } else {
             const desc = block.querySelector(".block-description");
             if (desc) {
-              desc.focus();
+              desc.focus({ preventScroll: true });
             } else {
               const firstItem = block.querySelector(".checklist-text");
               if (firstItem) {
-                firstItem.focus();
+                firstItem.focus({ preventScroll: true });
               }
             }
           }
@@ -435,6 +437,24 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Отслеживание кликов по чекбоксам для изменения состояния и кнопок удаления/сохранения/редактирования
   noteContentEl.addEventListener("click", (e) => {
+    // -1. Клик по ссылке (открытие в системном браузере)
+    const link = e.target.closest("a");
+    if (link) {
+      e.preventDefault();
+      const url = link.getAttribute("href");
+      console.log("Link clicked, URL:", url);
+      if (url) {
+        showToast(prefs.lang === "ru" ? "Открываем ссылку: " + url : "Opening link: " + url);
+        invoke("plugin:opener|open", { path: url }).catch(err => {
+          console.error("Failed to open link:", err);
+          showToast("Failed to open link: " + err);
+        });
+      } else {
+        showToast("Link has no href attribute");
+      }
+      return;
+    }
+
     // 0. Клик по иконке блока (только в режиме редактирования)
     const blockIcon = e.target.closest(".block-icon");
     if (blockIcon) {
@@ -512,12 +532,13 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Включаем редактирование полей
         block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
           el.setAttribute("contenteditable", "true");
+          el.innerHTML = unlinkifyHtml(el.innerHTML); // Очищаем ссылки при входе в режим редактирования
         });
         
         // Фокусируем первое редактируемое поле
         const firstEditable = block.querySelector(".block-body, .checklist-text");
         if (firstEditable) {
-          firstEditable.focus();
+          firstEditable.focus({ preventScroll: true });
           placeCaretAtEnd(firstEditable);
         }
       }
@@ -535,6 +556,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Выключаем редактирование полей
         block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
           el.setAttribute("contenteditable", "false");
+          el.innerHTML = linkifyHtml(el.innerHTML); // Превращаем ссылки в кликабельные элементы при сохранении
         });
         
         hasUnsavedChanges = true;
@@ -1107,6 +1129,12 @@ function selectNote(id) {
         block.classList.add(activeColorClass);
       }
 
+      // Удаляем временные ручки перетаскивания (если они были сохранены)
+      block.querySelectorAll(".checklist-drag-handle").forEach(el => el.remove());
+      block.querySelectorAll(".checklist-row").forEach(row => {
+        row.removeAttribute("draggable");
+      });
+
       const colorPanel = createBlockColorPanelHTML(activeColorClass);
       block.appendChild(colorPanel);
       
@@ -1114,6 +1142,7 @@ function selectNote(id) {
       block.classList.remove("is-editing");
       block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
         el.setAttribute("contenteditable", "false");
+        el.innerHTML = linkifyHtml(el.innerHTML); // Превращаем ссылки в кликабельные элементы при загрузке
       });
     });
 
@@ -1613,6 +1642,7 @@ function getCleanContentHTML() {
     block.classList.remove("new-block-fade"); // Очищаем временный класс анимации перед сохранением
     block.querySelectorAll(".block-subtitle, .block-body, .block-description, .checklist-text").forEach(el => {
       el.setAttribute("contenteditable", "false");
+      el.innerHTML = linkifyHtml(el.innerHTML); // Убеждаемся, что ссылки кликабельны в сохраненном HTML
     });
 
     const cp = block.querySelector(".block-control-panel");
@@ -1620,6 +1650,12 @@ function getCleanContentHTML() {
 
     const colP = block.querySelector(".block-color-panel");
     if (colP) colP.remove();
+  });
+
+  temp.querySelectorAll(".checklist-drag-handle").forEach(el => el.remove());
+  temp.querySelectorAll(".checklist-row").forEach(row => {
+    row.removeAttribute("draggable");
+    row.classList.remove("dragging");
   });
   
   return temp.innerHTML;
@@ -1642,7 +1678,7 @@ function isSelectionInsideChecklist() {
 
 // Установка каретки в конец редактируемого элемента
 function placeCaretAtEnd(el) {
-  el.focus();
+  el.focus({ preventScroll: true });
   if (typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined") {
     const range = document.createRange();
     range.selectNodeContents(el);
@@ -1764,4 +1800,23 @@ function closeAllEmojiPickers() {
     activeOutsideClickFn = null;
   }
 }
+
+// Превращает текстовые URL в кликабельные HTML-ссылки
+function linkifyHtml(html) {
+  if (!html) return "";
+  // Сначала убираем старые ссылки, чтобы избежать вложенных или дублирующихся тегов <a>
+  const clean = unlinkifyHtml(html);
+  
+  // Регулярное выражение для поиска URL-адресов (http:// или https://)
+  const urlPattern = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+  return clean.replace(urlPattern, '<a href="$1" class="editor-link" target="_blank">$1</a>');
+}
+
+// Убирает теги <a>, превращая их обратно в простой текст
+function unlinkifyHtml(html) {
+  if (!html) return "";
+  return html.replace(/<a\b[^>]*[^>]*>(.*?)<\/a>/ig, '$1');
+}
+
+
 

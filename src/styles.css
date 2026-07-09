@@ -130,6 +130,13 @@ input, #note-content, #note-content * {
 }
 
 /* Запретить выделение служебных элементов внутри редактора */
+#note-content .material-symbols-outlined,
+#note-content .block-icon,
+#note-content .block-btn,
+#note-content .block-color-panel,
+#note-content .block-color-panel *,
+#note-content .emoji-picker-popover,
+#note-content .emoji-picker-popover *,
 .material-symbols-outlined,
 .block-icon,
 .block-btn,
@@ -952,6 +959,7 @@ html[data-theme="dark"] .modal-content {
   cursor: text;
 }
 
+
 .checklist-row .editor-checkbox {
   flex-shrink: 0;
   margin-right: 0;
@@ -1571,4 +1579,18 @@ html[data-theme="dark"] .editor-block.is-editing .block-icon:hover,
 .emoji-picker-clear-btn:hover {
   background-color: var(--bg-hover);
   color: var(--text-color);
+}
+
+/* Ссылки внутри блоков */
+#note-content a,
+.editor-link {
+  color: var(--accent-color) !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  word-break: break-all;
+}
+
+#note-content a:hover,
+.editor-link:hover {
+  filter: brightness(1.2);
 }
