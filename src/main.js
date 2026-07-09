@@ -442,15 +442,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (link) {
       e.preventDefault();
       const url = link.getAttribute("href");
-      console.log("Link clicked, URL:", url);
       if (url) {
-        showToast(prefs.lang === "ru" ? "Открываем ссылку: " + url : "Opening link: " + url);
         invoke("open_in_browser", { url: url }).catch(err => {
           console.error("Failed to open link:", err);
           showToast("Failed to open link: " + err);
         });
-      } else {
-        showToast("Link has no href attribute");
       }
       return;
     }
