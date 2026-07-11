@@ -446,7 +446,7 @@ button, input, select, textarea {
   justify-content: space-between;
   height: 38px; /* Высота совпадает с белой панелькой */
   flex-shrink: 0; /* Предотвращает уменьшение высоты при заполнении списка */
-  padding: 0 16px;
+  padding: 0 16px 0 10px;
   border-radius: 0;
   cursor: pointer;
   position: relative;
