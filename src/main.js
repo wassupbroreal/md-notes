@@ -731,7 +731,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         setTimeout(() => {
           splash.style.display = "none";
         }, 380);
-      }, 500);
+      }, 600);
     }
   }
 });
